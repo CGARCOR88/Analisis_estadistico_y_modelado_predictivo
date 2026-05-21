@@ -1,0 +1,32 @@
+[1mindexing[0m [34mpima_diabetes_clean.csv[0m [==========================] [32m1.60GB/s[0m, eta: [36m 0s[0m                                                                                                                   
+Call:
+glm(formula = formula_modelo, family = binomial, data = datos_train)
+
+Coefficients:
+                          Estimate Std. Error z value Pr(>|z|)    
+(Intercept)              -9.576072   0.973088  -9.841  < 2e-16 ***
+Pregnancies               0.098387   0.038629   2.547 0.010866 *  
+Glucose                   0.042460   0.005216   8.140 3.94e-16 ***
+BloodPressure            -0.007706   0.010137  -0.760 0.447145    
+SkinThickness             0.018574   0.014523   1.279 0.200921    
+Insulin                  -0.002306   0.001142  -2.020 0.043350 *  
+BMI                       0.083070   0.023470   3.539 0.000401 ***
+DiabetesPedigreeFunction  0.641355   0.344323   1.863 0.062511 .  
+Age                       0.014933   0.011758   1.270 0.204064    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 694.17  on 536  degrees of freedom
+Residual deviance: 489.18  on 528  degrees of freedom
+AIC: 507.18
+
+Number of Fisher Scoring iterations: 5
+
+    Predicho
+Real   0   1
+   0 134  16
+   1  36  45
+
+Precisión Global (Accuracy): 77.49 %

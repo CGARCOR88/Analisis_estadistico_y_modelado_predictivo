@@ -1,0 +1,11 @@
+========================================================
+INICIO DEL PROCESAMIENTO EDA: 2026-05-21 12:19:32.814847 
+========================================================
+
+[1mindexing[0m [34mpima_diabetes_clean.csv[0m [==========================] [32m1.50GB/s[0m, eta: [36m 0s[0m                                                                                                                   
+--- MEDIAS DE VARIABLES SEGÚN EL DIAGNÓSTICO ---
+# A tibble: 2 × 4
+  Outcome  Total Media_Glucosa Media_BMI
+  <fct>    <int>         <dbl>     <dbl>
+1 Sano       500          111.      30.9
+2 Diabetes   268          142.      35.4

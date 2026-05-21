@@ -1,0 +1,26 @@
+# ==============================================================================
+# REPOSITORIO: Análisis Estadístico y Modelado Predictivo
+# ARCHIVO: .gitignore principal
+# ==============================================================================
+
+# --- Archivos del sistema y temporales de R ---
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# --- Datos crudos y limpios (Seguridad y peso) ---
+data/*
+!data/.gitkeep
+
+# --- Contenido de Resultados (Evitar ruido en Git) ---
+results/logs/*
+!results/logs/.gitkeep
+
+results/plots/*
+!results/plots/.gitkeep
+
+# --- Entornos Virtuales (Solo subir configuraciones, no librerías locales) ---
+renv/library/
+renv/sandbox/
+renv/staging/
