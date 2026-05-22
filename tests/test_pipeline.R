@@ -1,29 +1,106 @@
 library(testthat)
 library(readr)
 
-# Contexto de la prueba
-context("Validación de Calidad del Pipeline de Datos")
+# testthat::test_file() cambia el working directory al directorio del test.
+# Nos aseguramos de estar en la raíz del proyecto para que las rutas relativas funcionen.
+if (basename(getwd()) == "tests") setwd("..")
 
-test_that("El dataset limpio se ha generado correctamente", {
-  
-  # 1. Comprobar que el archivo existe en la ruta configurada
-  # Nota: Usamos la ruta por defecto o cargamos CONFIG si está en memoria
-  ruta_datos <- ifelse(exists("CONFIG"), CONFIG$archivo_datos_clean, "data/pima_diabetes_clean.csv")
+# Helper: accede a CONFIG si existe, si no usa el valor por defecto
+cfg <- function(key, default) if (exists("CONFIG")) CONFIG[[key]] else default
+
+# ==============================================================================
+# TEST 1: Dataset preprocesado (script 01)
+# ==============================================================================
+test_that("El dataset preprocesado existe y tiene estructura correcta", {
+
+  ruta_datos <- cfg("archivo_datos_clean", "data/pima_diabetes_clean.csv")
   expect_true(file.exists(ruta_datos))
-  
-  # Cargar datos para evaluar su estructura
+
   datos <- read_csv(ruta_datos, show_col_types = FALSE)
-  
-  # 2. Test: Comprobar que la imputación funcionó y NO hay valores faltantes (NAs)
-  # Evaluamos las variables críticas que antes tenían ceros/NAs
-  variables_criticas <- c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI")
-  num_nas <- sum(is.na(datos[, variables_criticas]))
-  expect_equal(num_nas, 0)
-  
-  # 3. Test: Comprobar las dimensiones lógicas del dataset (Pima tiene 768 pacientes)
+
+  # Dimensiones Pima: 768 filas, 9 columnas
   expect_equal(nrow(datos), 768)
   expect_equal(ncol(datos), 9)
-  
-  # 4. Test: Comprobar que la variable objetivo sigue siendo binaria (0 o 1) antes del factor
-  expect_true(all(datos$Outcome %in% c(0, 1)))
+
+  # Variable objetivo binaria (0 o 1)
+  expect_true(all(datos$Outcome %in% c(0, 1), na.rm = TRUE))
+
+  variables_criticas <- cfg("variables_con_nas",
+    c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"))
+
+  # Los ceros deben haberse convertido en NA (no quedar como 0)
+  ceros_restantes <- sum(datos[, variables_criticas] == 0, na.rm = TRUE)
+  expect_equal(ceros_restantes, 0)
+
+  # Deben existir NAs (confirma conversión, no eliminación de filas)
+  expect_gt(sum(is.na(datos[, variables_criticas])), 0)
+})
+
+# ==============================================================================
+# TEST 2: Modelo entrenado (script 03)
+# ==============================================================================
+test_that("El modelo entrenado es válido y tiene la estructura correcta", {
+
+  ruta_modelo <- cfg("archivo_modelo", "results/modelo_logistico.rds")
+  expect_true(file.exists(ruta_modelo))
+
+  modelo <- readRDS(ruta_modelo)
+
+  expect_s3_class(modelo, "glm")
+  expect_equal(modelo$family$family, "binomial")
+  # 8 predictores + intercepto = 9 coeficientes
+  expect_equal(length(coef(modelo)), 9)
+})
+
+# ==============================================================================
+# TEST 3: Artefacto de imputación — medianas del train (script 03)
+# ==============================================================================
+test_that("Las medianas de entrenamiento están guardadas y son válidas", {
+
+  ruta_medianas <- cfg("archivo_medianas", "results/medianas_train.rds")
+  expect_true(file.exists(ruta_medianas))
+
+  medianas        <- readRDS(ruta_medianas)
+  vars_esperadas  <- cfg("variables_con_nas",
+    c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"))
+
+  # Contiene exactamente las variables de imputación
+  expect_true(all(vars_esperadas %in% names(medianas)))
+
+  # Todos los valores son positivos (medidas fisiológicas no pueden ser <= 0)
+  expect_true(all(medianas > 0))
+})
+
+# ==============================================================================
+# TEST 4: Artefactos visuales y logs generados (scripts 02 y 03)
+# ==============================================================================
+test_that("Los logs y gráficos del pipeline se han generado correctamente", {
+
+  ruta_log_eda    <- cfg("log_eda",        "results/logs/eda_processing.log")
+  ruta_log_modelo <- cfg("log_modelo",     "results/logs/model_training.log")
+  ruta_boxplot    <- cfg("grafico_output", "results/plots/boxplot_glucosa_vs_outcome.png")
+  ruta_roc        <- cfg("grafico_roc",    "results/plots/roc_curve.png")
+
+  expect_true(file.exists(ruta_log_eda))
+  expect_gt(file.size(ruta_log_eda), 0)
+
+  expect_true(file.exists(ruta_log_modelo))
+  expect_gt(file.size(ruta_log_modelo), 0)
+
+  expect_true(file.exists(ruta_boxplot))
+  expect_true(file.exists(ruta_roc))
+})
+
+# ==============================================================================
+# TEST 5: El log de entrenamiento registra métricas y verificación VIF (script 03)
+# ==============================================================================
+test_that("El log de entrenamiento contiene las métricas clave y el análisis VIF", {
+
+  ruta_log_modelo <- cfg("log_modelo", "results/logs/model_training.log")
+  log_texto       <- paste(readLines(ruta_log_modelo), collapse = "\n")
+
+  expect_true(grepl("Accuracy",     log_texto))
+  expect_true(grepl("Sensibilidad", log_texto))
+  expect_true(grepl("AUC-ROC",      log_texto))
+  expect_true(grepl("VIF",          log_texto))
 })

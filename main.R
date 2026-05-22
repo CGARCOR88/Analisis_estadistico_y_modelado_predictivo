@@ -13,12 +13,18 @@ CONFIG <- list(
                          "Insulin", "BMI", "DiabetesPedigreeFunction", "Age", "Outcome"),
   variables_con_nas  = c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"),
   variable_objetivo  = "Outcome",
-  
+  semilla            = 123,
+
   # Rutas de almacenamiento
-  archivo_datos_clean = "data/pima_diabetes_clean.csv",
-  grafico_output      = "results/plots/boxplot_glucosa_vs_outcome.png",
-  log_eda             = "results/logs/eda_processing.log",
-  log_modelo          = "results/logs/model_training.log"
+  archivo_datos_clean  = "data/pima_diabetes_clean.csv",
+  archivo_modelo       = "results/modelo_logistico.rds",
+  archivo_medianas     = "results/medianas_train.rds",
+  archivo_nuevos_datos = "data/pima_diabetes_clean.csv",  # Sustituir por nuevos datos en producción
+  archivo_predicciones = "results/predicciones.csv",
+  grafico_output       = "results/plots/boxplot_glucosa_vs_outcome.png",
+  grafico_roc          = "results/plots/roc_curve.png",
+  log_eda              = "results/logs/eda_processing.log",
+  log_modelo           = "results/logs/model_training.log"
 )
 
 print("🚀 INICIANDO PIPELINE DE DATOS MODULAR...")
@@ -30,31 +36,43 @@ if(!dir.exists("results/plots")) dir.create("results/plots")
 
 # 1. Ejecutar Ingesta y Limpieza
 print("--> Ejecutando Script 01: Ingesta de Datos...")
-source("scripts/01_data_ingestion.R", local = FALSE)
+tryCatch(
+  source("scripts/01_data_ingestion.R", local = FALSE),
+  error = function(e) stop(paste("FALLO en Script 01:", conditionMessage(e)))
+)
 
 # 2. Ejecutar Análisis Exploratorio (EDA)
 print("--> Ejecutando Script 02: Análisis Exploratorio...")
-source("scripts/02_exploratory_analysis.R", local = FALSE)
+tryCatch(
+  source("scripts/02_exploratory_analysis.R", local = FALSE),
+  error = function(e) stop(paste("FALLO en Script 02:", conditionMessage(e)))
+)
 
 # 3. Ejecutar Modelado Predictivo
 print("--> Ejecutando Script 03: Modelado Predictivo...")
-source("scripts/03_predictive_modeling.R", local = FALSE)
+tryCatch(
+  source("scripts/03_predictive_modeling.R", local = FALSE),
+  error = function(e) stop(paste("FALLO en Script 03:", conditionMessage(e)))
+)
 
 # 4. Ejecutar Tests Unitarios de Calidad
 print("--> Ejecutando Tests Unitarios de Calidad...")
 
-# Abrimos un log específico para el control de calidad (QA)
 log_qa <- file("results/logs/pipeline_qa.log", open = "wt")
 sink(log_qa, type = "output")
 sink(log_qa, type = "message")
 
-library(testthat)
-# Ejecutamos el test (la salida se escribirá en el log)
-test_results <- test_file("tests/test_pipeline.R")
-
-# Cerramos el log y devolvemos el control a la pantalla
-sink(type = "message")
-sink(type = "output")
-close(log_qa)
+tryCatch({
+  library(testthat)
+  test_results <- test_file("tests/test_pipeline.R")
+}, finally = {
+  sink(type = "message")
+  sink(type = "output")
+  close(log_qa)
+})
 
 print("🏁 ¡PIPELINE FINALIZADO! Reporte de calidad guardado en results/logs/pipeline_qa.log")
+
+# INFERENCIA (opcional): Para predecir sobre datos nuevos, ajusta
+# CONFIG$archivo_nuevos_datos y ejecuta:
+#   source("scripts/04_predict.R")
