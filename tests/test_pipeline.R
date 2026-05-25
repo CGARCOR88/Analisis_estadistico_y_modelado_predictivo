@@ -44,12 +44,19 @@ test_that("El modelo entrenado es válido y tiene la estructura correcta", {
   ruta_modelo <- cfg("archivo_modelo", "results/modelo_logistico.rds")
   expect_true(file.exists(ruta_modelo))
 
-  modelo <- readRDS(ruta_modelo)
+  modelo_obj <- readRDS(ruta_modelo)
+  m_imp      <- cfg("m_imputaciones", 5)
 
-  expect_s3_class(modelo, "glm")
-  expect_equal(modelo$family$family, "binomial")
+  # modelo_obj es una lista con m modelos GLM (imputación múltiple)
+  expect_true(is.list(modelo_obj))
+  expect_true("modelos" %in% names(modelo_obj))
+  expect_equal(length(modelo_obj$modelos), m_imp)
+
+  # Cada modelo individual es un GLM binomial con 9 coeficientes
+  expect_s3_class(modelo_obj$modelos[[1]], "glm")
+  expect_equal(modelo_obj$modelos[[1]]$family$family, "binomial")
   # 8 predictores + intercepto = 9 coeficientes
-  expect_equal(length(coef(modelo)), 9)
+  expect_equal(length(coef(modelo_obj$modelos[[1]])), 9)
 })
 
 # ==============================================================================
@@ -99,8 +106,13 @@ test_that("El log de entrenamiento contiene las métricas clave y el análisis V
   ruta_log_modelo <- cfg("log_modelo", "results/logs/model_training.log")
   log_texto       <- paste(readLines(ruta_log_modelo), collapse = "\n")
 
-  expect_true(grepl("Accuracy",     log_texto))
-  expect_true(grepl("Sensibilidad", log_texto))
-  expect_true(grepl("AUC-ROC",      log_texto))
-  expect_true(grepl("VIF",          log_texto))
+  expect_true(grepl("Accuracy",       log_texto))
+  expect_true(grepl("Sensibilidad",   log_texto))
+  expect_true(grepl("AUC-ROC",        log_texto))
+  expect_true(grepl("VIF",            log_texto))
+  expect_true(grepl("Brier Score",    log_texto))
+  expect_true(grepl("Hosmer-Lemeshow",log_texto))
+  expect_true(grepl("Youden",         log_texto))
+  expect_true(grepl("LASSO",          log_texto))
+  expect_true(grepl("VALIDACI",       log_texto, ignore.case = TRUE))
 })

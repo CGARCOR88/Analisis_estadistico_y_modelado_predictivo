@@ -13,6 +13,18 @@ datos_originales <- tryCatch(
   error = function(e) stop(paste("Error al descargar datos desde URL:", conditionMessage(e)))
 )
 
+# Validar estructura del dataset descargado
+if (nrow(datos_originales) == 0) {
+  stop("Error de validación: el dataset descargado está vacío.")
+}
+cols_faltantes <- setdiff(CONFIG$columnas_input, names(datos_originales))
+if (length(cols_faltantes) > 0) {
+  stop(paste("Error de validación: columnas no encontradas:",
+             paste(cols_faltantes, collapse = ", ")))
+}
+cat(sprintf("Dataset descargado: %d filas × %d columnas. Validación OK.\n",
+            nrow(datos_originales), ncol(datos_originales)))
+
 # Reemplazar ceros por NA en variables fisiológicamente imposibles
 datos <- datos_originales %>%
   mutate(across(all_of(CONFIG$variables_con_nas), ~ ifelse(. == 0, NA, .)))

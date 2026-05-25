@@ -15,6 +15,12 @@ CONFIG <- list(
   variable_objetivo  = "Outcome",
   semilla            = 123,
 
+  # Parámetros del modelo
+  proporcion_train     = 0.7,   # Proporción de datos para entrenamiento
+  umbral_clasificacion = 0.5,   # Umbral de clasificación (optimizable con Youden)
+  m_imputaciones       = 5,     # Número de imputaciones PMM (imputación múltiple)
+  k_folds              = 10,    # Folds para validación cruzada k-fold
+
   # Rutas de almacenamiento
   archivo_datos_clean  = "data/pima_diabetes_clean.csv",
   archivo_modelo       = "results/modelo_logistico.rds",
@@ -26,6 +32,9 @@ CONFIG <- list(
   log_eda              = "results/logs/eda_processing.log",
   log_modelo           = "results/logs/model_training.log"
 )
+
+# Cargar funciones de utilidad compartidas
+source("scripts/utils.R")
 
 print("🚀 INICIANDO PIPELINE DE DATOS MODULAR...")
 

@@ -24,10 +24,12 @@ if (!file.exists(CONFIG$archivo_nuevos_datos)) {
 }
 
 # 1. Cargar artefactos del entrenamiento
-modelo         <- readRDS(CONFIG$archivo_modelo)
+modelo_obj     <- readRDS(CONFIG$archivo_modelo)
 medianas_train <- readRDS(CONFIG$archivo_medianas)
 
-cat("Modelo cargado desde:", CONFIG$archivo_modelo, "\n")
+# modelo_obj es una lista con m modelos GLM (imputación múltiple)
+m_modelos <- length(modelo_obj$modelos)
+cat(sprintf("Cargados %d modelos (MI) desde: %s\n", m_modelos, CONFIG$archivo_modelo))
 cat("Medianas de entrenamiento cargadas.\n\n")
 
 # 2. Cargar y preprocesar nuevos datos
@@ -53,9 +55,11 @@ for (v in CONFIG$variables_con_nas) {
   }
 }
 
-# 3. Generar predicciones
-probs  <- predict(modelo, newdata = nuevos_datos, type = "response")
-clases <- ifelse(probs > 0.5, 1, 0)
+# 3. Generar predicciones: promedio de probabilidades de los m modelos
+probs_lista <- lapply(modelo_obj$modelos, function(m)
+  predict(m, newdata = nuevos_datos, type = "response"))
+probs  <- Reduce("+", probs_lista) / m_modelos
+clases <- ifelse(probs > CONFIG$umbral_clasificacion, 1, 0)
 
 resultados <- nuevos_datos %>%
   mutate(

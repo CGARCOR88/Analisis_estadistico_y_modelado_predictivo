@@ -24,3 +24,7 @@ results/plots/*
 renv/library/
 renv/sandbox/
 renv/staging/
+
+# --- Logs temporales de captura de ejecución ---
+results/logs/run_output.txt
+results/logs/run_stderr.txt
