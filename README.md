@@ -1,138 +1,137 @@
-# Analisis_estadistico_y_modelado_predictivo 🧬💻
+# Statistical_Analysis_and_Predictive_Modeling
 
-Este proyecto implementa un **pipeline de datos modular** y un modelo predictivo para el análisis del dataset **Pima Indians Diabetes**. El sistema está diseñado bajo principios de ingeniería de software: desacoplado, parametrizado, con gestión de entornos virtuales (`renv`), registro automatizado de logs, pruebas unitarias y script de inferencia.
+This project implements a **modular data pipeline** and a predictive model to analyze the **Pima Indians Diabetes** dataset. The system is designed following software engineering principles: decoupled, parameterized, featuring virtual environment management (`renv`), automated logging, unit testing, and an inference script.
 
-## 📁 Estructura del Proyecto
+## 📁 Project Structure
 
 ```text
-├── data/                        # Datasets preprocesados (ignorados en Git)
+├── data/                        # Preprocessed datasets (Git ignored)
 │   ├── .gitkeep
-│   └── pima_diabetes_clean.csv  # CSV con ceros convertidos a NA
-├── scripts/                     # Scripts del pipeline (ejecución secuencial)
-│   ├── utils.R                  # Funciones compartidas (VIF, AUC, métricas, Brier, HL)
-│   ├── 01_data_ingestion.R      # Descarga, validación, limpieza ceros → NA
-│   ├── 02_exploratory_analysis.R# EDA: estadísticas, NAs, balanceo, boxplot
-│   ├── 03_predictive_modeling.R # MI PMM → GLM pooled → VIF → métricas → CV → LASSO → ROC
-│   └── 04_predict.R             # (Opcional) Inferencia sobre nuevos datos
-├── tests/                       # Pruebas unitarias automatizadas (testthat)
-│   └── test_pipeline.R          # 5 bloques de test, 31 aserciones
-├── results/                     # Artefactos generados (ignorados en Git)
+│   └── pima_diabetes_clean.csv  # CSV with zeros converted to NA
+├── scripts/                     # Pipeline scripts (sequential execution)
+│   ├── utils.R                  # Shared functions (VIF, AUC, metrics, Brier, HL)
+│   ├── 01_data_ingestion.R      # Download, validation, zero → NA cleaning
+│   ├── 02_exploratory_analysis.R# EDA: statistics, NAs, class balance, boxplots
+│   ├── 03_predictive_modeling.R # MI PMM → GLM pooled → VIF → metrics → CV → LASSO → ROC
+│   └── 04_predict.R             # (Optional) Inference on new data
+├── tests/                       # Automated unit tests (testthat)
+│   └── test_pipeline.R          # 5 test blocks, 31 assertions
+├── results/                     # Generated artifacts (Git ignored)
 │   ├── logs/
 │   │   ├── eda_processing.log
 │   │   ├── model_training.log
 │   │   └── pipeline_qa.log
 │   ├── plots/
 │   │   ├── boxplot_glucosa_vs_outcome.png
-│   │   └── roc_curve.png        # Incluye marcador del umbral óptimo de Youden
-│   ├── modelo_logistico.rds     # Lista de 5 modelos GLM (imputación múltiple)
-│   └── medianas_train.rds       # Medianas del set de entrenamiento
-├── main.R                       # Orquestador principal + CONFIG global
-├── renv.lock                    # Bloqueo de versiones de librerías
+│   │   └── roc_curve.png        # Includes optimal Youden threshold marker
+│   ├── modelo_logistico.rds     # List of 5 GLM models (multiple imputation)
+│   └── medianas_train.rds       # Training set medians
+├── main.R                       # Main orchestrator + global CONFIG
+├── renv.lock                    # Library version lockfile
 └── README.md
 ```
 
-## 🚀 Instalación y Ejecución
+## Installation and Execution
 
-Para garantizar la **reproducibilidad científica**, el proyecto utiliza `renv` para aislar las librerías necesarias.
+To guarantee scientific reproducibility, this project uses renv to isolate the required libraries.
 
-1. **Clona el repositorio** en tu máquina local:
+1. **Clone the repository** to your local machine:
 
     ```bash
     git clone https://github.com/CGARCOR88/Analisis_estadistico_y_modelado_predictivo.git
     cd Analisis_estadistico_y_modelado_predictivo
     ```
 
-2. Abre el proyecto en tu entorno de R (VS Code o RStudio).
+2.Open the project in your R environment (VS Code or RStudio).
 
-3. **Restaura el entorno virtual** ejecutando en la consola de R:
+3. **Restore the virtual environment** by running the following in the R console
 
     ```r
     renv::restore()
     ```
 
-4. **Ejecuta el pipeline completo** desde el orquestador raíz:
-
+4. **Run the complete pipeline** from the root orchestrator:
     ```r
     source("main.R")
     ```
 
-## ⚙️ Diseño del Pipeline
+## Pipeline Design
 
 | Script | Responsabilidad |
 |--------|----------------|
-| `utils.R` | Funciones compartidas: `calc_vif`, `calc_auc`, `calc_metricas`, `calc_brier_score`, `hosmer_lemeshow_test` |
-| `01_data_ingestion.R` | Descarga CSV, **valida dimensiones y columnas**, convierte ceros fisiológicos a `NA` |
-| `02_exploratory_analysis.R` | Estadísticas descriptivas, análisis de missings, balance de clases, boxplot |
-| `03_predictive_modeling.R` | Split estratificado 70/30 → **MI PMM (m=5)** → Pooling Rubin → VIF → Youden → Brier/HL → Cook → **CV k=10** → **LASSO** → ROC |
-| `04_predict.R` | Carga lista de modelos + medianas, preprocesa nuevos datos, promedia predicciones de los m modelos |
+| `utils.R` | Shared functions: `calc_vif`, `calc_auc`, `calc_metricas`, `calc_brier_score`, `hosmer_lemeshow_test` |
+| `01_data_ingestion.R` | Downloads CSV, **validates dimensions and columns**, converts physiological zeros to NA |
+| `02_exploratory_analysis.R` | EDescriptive statistics, missing values analysis, class balance, boxplots |
+| `03_predictive_modeling.R` | Stratified 70/30 split → **MI PMM (m=5)** → Rubin's Pooling → VIF → Youden → Brier/HL → Cook's D → **10-fold CV** → LASSO → ROC |
+| `04_predict.R` | Loads model list + medians, preprocesses new data, averages predictions across the m models |
 
-**Decisiones de diseño:**
-- **Imputación múltiple real (m=5):** Se entrenan 5 modelos GLM (uno por imputación). Los coeficientes se combinan con las **Reglas de Rubin** para obtener estimaciones pooled con incertidumbre correcta.
-- **Predicciones promediadas:** En test y en producción, las probabilidades de los 5 modelos se promedian (Rubin para predicciones), reduciendo la varianza de imputación.
-- **Sin data leakage:** `mice` solo actúa sobre el train. El test y los datos de producción se imputan con medianas calculadas exclusivamente en train.
-- **Parámetros centralizados en `CONFIG`:** `proporcion_train`, `umbral_clasificacion`, `m_imputaciones` y `k_folds` se definen en `main.R` y son accesibles por todos los scripts.
-- Los logs se gestionan con `sink()` + `tryCatch/finally` para garantizar el cierre de conexiones incluso ante errores.
+**Design Decisions:**
+- **True Multiple Imputation (m=5):** 5 GLM models are trained (one per imputation). Coeficients are combined using **Rubin's Rules** to obtain pooled estimates with correct uncertainty propagation.
+- **Averaged Predictions:**In testing and production, probabilities from the 5 models are averaged (Rubin's approach for predictions), reducing imputation variance.
+- **No Data Leakage:** `mice` only operates on the training set. The test set and production data are imputed using medians calculated exclusively from the training set.
+- **Centralized Parameters in `CONFIG`:** `proporcion_train`, `umbral_clasificacion`, `m_imputaciones` and `k_folds` are defined in `main.R` and are globally accessible by all scripts.
+- Logs are managed via `sink()` + `tryCatch/finally` to guarantee that connections close properly even if an error occurs.
 
-## 📊 Resultados del Modelo
+## Model Results
 
-**GLM con Imputación Múltiple PMM (m=5, Reglas de Rubin)** — dataset Pima Indians Diabetes, split estratificado 70/30:
+**GLM with PMM Multiple Imputation (m=5, Rubin's Rules)** — Pima Indians Diabetes dataset, stratified 70/30 split:
 
-### Métricas en el set de test (umbral por defecto vs. umbral óptimo de Youden)
+### Test Set Metrics (Default Threshold vs. Optimal Youden Threshold)
 
-| Métrica | Umbral 0.50 | Umbral óptimo 0.28 |
-|---------|-------------|-------------------|
+| Metric | Threshold 0.50 | Optimal Threshold 0.28 |
+|---------|------------|-------------------|
 | Accuracy | 74.03% | 73.59% |
-| **Sensibilidad (Recall)** | 50.62% | **79.01%** |
-| Especificidad | 86.67% | 70.67% |
-| Precisión Positiva (PPV) | 67.21% | 59.26% |
+| **Sensitivity (Recall)** | 50.62% | **79.01%** |
+| Specificity | 86.67% | 70.67% |
+| Positive Predictive Value (PPV) | 67.21% | 59.26% |
 | **F1-Score** | 0.5775 | **0.6772** |
 | **AUC-ROC** | **0.8244** | — |
 
-> El umbral óptimo de Youden (0.28) mejora la Sensibilidad de 50.6% a 79.0% y el F1 de 0.58 a 0.68, a costa de reducir la Especificidad. En cribado de diabetes, maximizar Sensibilidad es prioritario.
+> The optimal Youden threshold (0.28) improves Sensitivity from 50.6% to 79.0% and the F1-Score from 0.58 to 0.68, at the cost of lower Specificity. For diabetes screening, maximizing Sensitivity is the priority.
 
-### Robustez y calibración
+### Robustness and Calibration
 
-| Análisis | Resultado |
+| Análysis | Result |
 |----------|-----------|
 | **AUC-ROC CV (k=10)** | **0.8413 ± 0.0532** |
 | Brier Score | 0.1650 (referencia nula: 0.2277) |
 | Hosmer-Lemeshow χ²(df=8) | 12.08, p = 0.1475 ✅ Buen ajuste |
-| Observaciones influyentes (Cook) | 36 / 537 (6.7%) |
+| Influential Observations (Cook) | 36 / 537 (6.7%) |
 
 ### Comparación con LASSO (glmnet, α=1)
 
-| Modelo | AUC-ROC | Variables |
+| Model | AUC-ROC | Features |
 |--------|---------|-----------|
 | GLM (MI m=5) | **0.8244** | 8 predictores |
-| LASSO (λ 1SE) | 0.8140 | 5 predictores (Pregnancies, Glucose, Insulin, BMI, Age) |
+| LASSO (λ 1SE) | 0.8140 | 5 predictors (Pregnancies, Glucose, Insulin, BMI, Age) |
 
-> LASSO elimina automáticamente BloodPressure, SkinThickness y DiabetesPedigreeFunction, reduciendo complejidad sin pérdida significativa de AUC.
+> LASSO automatically drops BloodPressure, SkinThickness, and DiabetesPedigreeFunction, reducing model complexity without any significant drop in AUC.
 
-### Multicolinealidad (VIF) y significancia
+### Multicollinearity (VIF) and Significance
 
-**VIF:** Todos los predictores < 2 (máx. 1.958 en BMI). Sin multicolinealidad problemática.
+**VIF:** All predictors < 2 (max. 1.958 for BMI). No problematic multicollinearity detected.
 
-**Variables significativas en coeficientes pooled (p < 0.05):** Glucose (\*\*\*), BMI (\*\*\*), Age (\*\*), Pregnancies (\*), DiabetesPedigreeFunction (\*).
+**Significant variables in pooled coefficients (p < 0.05):** Glucose (\*\*\*), BMI (\*\*\*), Age (\*\*), Pregnancies (\*), DiabetesPedigreeFunction (\*).
 
-El historial detallado se guarda en `results/logs/model_training.log`.
+The detailed execution history is saved in `results/logs/model_training.log`.
 
-## 🧪 Control de Calidad (QA)
+## Quality Control (QA)
 
-Al finalizar el pipeline se ejecutan **31 aserciones** automáticas mediante `testthat` distribuidas en 5 bloques:
+At the end of the pipeline, **31 automated** assertions are executed via testthat, distributed across 5 blocks:
 
-1. **Dataset preprocesado**: dimensiones correctas (768×9), outcome binario, ceros eliminados, NAs presentes
-2. **Modelo entrenado**: es una lista de 5 modelos GLM binomiales, cada uno con 9 coeficientes
-3. **Medianas de entrenamiento**: todas las variables críticas presentes, valores positivos
-4. **Artefactos visuales y logs**: ambos logs no vacíos, ambas imágenes PNG generadas
-5. **Contenido del log**: presencia de "Accuracy", "Sensibilidad", "AUC-ROC", "VIF", "Brier Score", "Hosmer-Lemeshow", "Youden" y "LASSO"
+1. **Preprocessed Dataset:**: correct dimensions (768×9), binary outcome, zeros removed, NAs present.
+2. **Trained Model**: confirms it is a list of 5 binomial GLM models, each with 9 coefficients.
+3. **Training Medians**: all critical variables present, values are positive
+4. **Visual Artifacts and Logs**: both logs are non-empty, both PNG plots are generated.
+5. **Log Content**: checks for the presence of "Accuracy", "Sensibilidad", "AUC-ROC", "VIF", "Brier Score", "Hosmer-Lemeshow", "Youden", and "LASSO".
 
-Resultado: `[ FAIL 0 | WARN 0 | SKIP 0 | PASS 31 ]`
+Output: `[ FAIL 0 | WARN 0 | SKIP 0 | PASS 31 ]`
 
-El reporte se almacena en `results/logs/pipeline_qa.log`.
+The QA report is stored in `results/logs/pipeline_qa.log`.
 
-## 🔍 Inferencia sobre Nuevos Datos
+## Inference on New Data
 
-Para generar predicciones sobre un nuevo dataset, puedes invocar el script desde tu entorno interactivo o directamente desde la terminal del sistema:
+To generate predictions on a new dataset, you can invoke the script from your interactive environment or directly from the system terminal:
 
 ```bash
 # Desde la terminal usando Rscript
@@ -144,20 +143,20 @@ Rscript scripts/04_predict.R
 source("scripts/04_predict.R")
 ```
 
-El script carga la lista de 5 modelos (`results/modelo_logistico.rds`) y las medianas de entrenamiento (`results/medianas_train.rds`), aplica el mismo preprocesamiento (ceros → NA, imputación por medianas de train), **promedia las probabilidades de los 5 modelos** y guarda las predicciones en `results/predicciones.csv`.
+he script loads the list of 5 models (`results/modelo_logistico.rds`) and the training medians (`results/medianas_train.rds`), applies the same preprocessing steps (zeros → NA, training median imputation), **averages the probabilities across the 5 models**, and saves the predictions to `results/predicciones.csv`.
 
-La ruta del archivo de entrada se configura en `CONFIG$archivo_nuevos_datos` dentro de `main.R`.
+The input file path can be configured via `CONFIG$archivo_nuevos_datos` inside `main.R`.
 
-## 📈 Análisis Visual
+## Visual Analysis
 
-El pipeline genera gráficos automáticamente en `results/plots/`:
+The pipeline automatically generates plots in `results/plots/`:
 
-* **`boxplot_glucosa_vs_outcome.png`** — Distribución de glucosa en plasma según diagnóstico.
-* **`roc_curve.png`** — Curva ROC del modelo GLM (m=5), con AUC anotado y marcador del umbral óptimo de Youden.
+* **`boxplot_glucosa_vs_outcome.png`** — Plasma glucose distribution grouped by diagnosis outcome.
+* **`roc_curve.png`** — ROC curve for the GLM model (m=5), complete with annotated AUC and the optimal Youden threshold marker.
 
 <p align="center">
   <img src="results/plots/boxplot_glucosa_vs_outcome.png" width="45%" alt="Boxplot Glucosa" />
   <img src="results/plots/roc_curve.png" width="45%" alt="Curva ROC Youden" />
 </p>
 
-> **Nota:** Si acabas de clonar el repositorio, la carpeta `results/` se creará automáticamente tras la primera ejecución de `source("main.R")`.
+> **Note:** If you have just cloned the repository, the `results/` folder will be created automatically after running `source("main.R")` for the first time.
